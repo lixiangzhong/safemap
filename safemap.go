@@ -15,7 +15,7 @@ const (
 //New
 func New[K comparable, V any](shard ...uint32) *SafeMap[K, V] {
 	var shardNum uint32 = defaultShard
-	if len(shard) != 0 {
+	if len(shard) != 0 && shard[0] > 0 {
 		shardNum = shard[0]
 	}
 	var sm = &SafeMap[K, V]{
