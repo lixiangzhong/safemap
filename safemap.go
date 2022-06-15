@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"hash/crc32"
+	"hash/fnv"
 	"sync"
 )
 
@@ -147,7 +148,7 @@ func keyid[T comparable](o T) uint32 {
 	}
 	enc := encpool.Get().(*gobEncoder)
 	defer enc.Free()
-	return enc.Crc32(o)
+	return enc.Hash32(o)
 }
 
 type KeyID interface {
@@ -159,9 +160,11 @@ type gobEncoder struct {
 	buf *bytes.Buffer
 }
 
-func (e *gobEncoder) Crc32(o any) uint32 {
+func (e *gobEncoder) Hash32(o any) uint32 {
 	e.enc.Encode(o)
-	return crc32.ChecksumIEEE(e.buf.Bytes())
+	h := fnv.New32()
+	h.Write(e.buf.Bytes())
+	return h.Sum32()
 }
 
 //Free
