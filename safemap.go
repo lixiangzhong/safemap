@@ -84,6 +84,17 @@ func (s *SafeMap[K, V]) Reset() {
 	}
 }
 
+//Len
+func (s *SafeMap[K, V]) Len() int {
+	var n int
+	for i := uint32(0); i < s.shard; i++ {
+		s.locks[i].RLock()
+		n += len(s.maps[i])
+		s.locks[i].RUnlock()
+	}
+	return n
+}
+
 //Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 func (s *SafeMap[K, V]) Range(f func(K, V) bool) {
 	for i := uint32(0); i < s.shard; i++ {
