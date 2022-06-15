@@ -2,4 +2,4 @@
 
 # safemap
 
-### go 泛型 + sync.Map
+### go 泛型 + map
