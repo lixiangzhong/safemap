@@ -3,7 +3,6 @@ package safemap
 import (
 	"bytes"
 	"encoding/gob"
-	"hash/crc32"
 	"hash/fnv"
 	"sync"
 )
@@ -153,9 +152,13 @@ func keyid[T comparable](o T) uint32 {
 	case float64:
 		return uint32(val)
 	case string:
-		return uint32(crc32.ChecksumIEEE([]byte(val)))
+		h := fnv.New32()
+		h.Write([]byte(val))
+		return h.Sum32()
 	case []byte:
-		return uint32(crc32.ChecksumIEEE(val))
+		h := fnv.New32()
+		h.Write(val)
+		return h.Sum32()
 	case bool:
 		if val {
 			return 1
