@@ -30,3 +30,18 @@ func BenchmarkSafeMap_Get(b *testing.B) {
 		}
 	})
 }
+
+//FuzzSafeMap_Set
+func FuzzSafeMap_Set(f *testing.F) {
+	m := New[string, string]()
+
+	f.Fuzz(func(t *testing.T, data string) {
+		val, ok := m.Get(data)
+		if ok {
+			if val != data {
+				t.Fatal(data, val, "not equal")
+			}
+		}
+		m.Set(data, data)
+	})
+}

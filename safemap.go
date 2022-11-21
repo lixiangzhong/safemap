@@ -11,7 +11,7 @@ const (
 	defaultShard = 64
 )
 
-//New
+// New
 func New[K comparable, V any](shard ...uint32) *SafeMap[K, V] {
 	var shardNum uint32 = defaultShard
 	if len(shard) != 0 && shard[0] > 0 {
@@ -34,7 +34,7 @@ type SafeMap[K comparable, V any] struct {
 	shard uint32
 }
 
-//Get returns the value associated with key.
+// Get returns the value associated with key.
 func (s *SafeMap[K, V]) Get(key K) (V, bool) {
 	idx := s.idx(key)
 	s.locks[idx].RLock()
@@ -46,19 +46,29 @@ func (s *SafeMap[K, V]) Get(key K) (V, bool) {
 	return *new(V), false
 }
 
-//GetOrSet returns the value for the key if present, otherwise sets and returns the default value
+// Exist returns true if key exists.
+func (s *SafeMap[K, V]) Exist(key K) bool {
+	idx := s.idx(key)
+	s.locks[idx].RLock()
+	_, ok := s.maps[idx][key]
+	s.locks[idx].RUnlock()
+	return ok
+}
+
+// GetOrSet returns the value for the key if present, otherwise sets and returns the default value
 func (s *SafeMap[K, V]) GetOrSet(key K, value V) V {
 	idx := s.idx(key)
 	s.locks[idx].Lock()
 	v, ok := s.maps[idx][key]
 	if !ok {
 		s.maps[idx][key] = value
+		v = value
 	}
 	s.locks[idx].Unlock()
 	return v
 }
 
-//Set sets the value for key.
+// Set sets the value for key.
 func (s *SafeMap[K, V]) Set(key K, value V) {
 	idx := s.idx(key)
 	s.locks[idx].Lock()
@@ -66,7 +76,7 @@ func (s *SafeMap[K, V]) Set(key K, value V) {
 	s.locks[idx].Unlock()
 }
 
-//Del deletes the value for key.
+// Del deletes the value for key.
 func (s *SafeMap[K, V]) Del(key K) {
 	idx := s.idx(key)
 	s.locks[idx].Lock()
@@ -74,7 +84,7 @@ func (s *SafeMap[K, V]) Del(key K) {
 	s.locks[idx].Unlock()
 }
 
-//Reset deletes all values.
+// Reset deletes all values.
 func (s *SafeMap[K, V]) Reset() {
 	for i := uint32(0); i < s.shard; i++ {
 		s.locks[i].Lock()
@@ -83,7 +93,7 @@ func (s *SafeMap[K, V]) Reset() {
 	}
 }
 
-//Len
+// Len
 func (s *SafeMap[K, V]) Len() int {
 	var n int
 	for i := uint32(0); i < s.shard; i++ {
@@ -94,7 +104,7 @@ func (s *SafeMap[K, V]) Len() int {
 	return n
 }
 
-//Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
+// Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 func (s *SafeMap[K, V]) Range(f func(K, V) bool) {
 	for i := uint32(0); i < s.shard; i++ {
 		s.locks[i].RLock()
@@ -108,7 +118,7 @@ func (s *SafeMap[K, V]) Range(f func(K, V) bool) {
 	}
 }
 
-//idx
+// idx
 func (s SafeMap[K, V]) idx(key K) uint32 {
 	return keyid(key) % s.shard
 }
@@ -190,7 +200,7 @@ func (e *gobEncoder) Hash32(o any) uint32 {
 	return h.Sum32()
 }
 
-//Free
+// Free
 func (e *gobEncoder) Free() {
 	e.buf.Reset()
 	encpool.Put(e)
