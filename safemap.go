@@ -104,6 +104,36 @@ func (s *SafeMap[K, V]) Len() int {
 	return n
 }
 
+// FromMap flushes the map and loads the new map.
+func (s *SafeMap[K, V]) FromMap(m map[K]V) {
+	for i := uint32(0); i < s.shard; i++ {
+		s.locks[i].Lock()
+	}
+	for i := uint32(0); i < s.shard; i++ {
+		s.maps[i] = make(map[K]V)
+	}
+	for k, v := range m {
+		idx := s.idx(k)
+		s.maps[idx][k] = v
+	}
+	for i := uint32(0); i < s.shard; i++ {
+		s.locks[i].Unlock()
+	}
+}
+
+// ToMap returns a copy of the map.
+func (s *SafeMap[K, V]) ToMap() map[K]V {
+	m := make(map[K]V)
+	for i := uint32(0); i < s.shard; i++ {
+		s.locks[i].RLock()
+		for k, v := range s.maps[i] {
+			m[k] = v
+		}
+		s.locks[i].RUnlock()
+	}
+	return m
+}
+
 // Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
 func (s *SafeMap[K, V]) Range(f func(K, V) bool) {
 	for i := uint32(0); i < s.shard; i++ {
